@@ -51,7 +51,12 @@ accuracy
 
 - log
 - loss
-- accuracy
-- accuracy for 6 different labels
+- accuracy : the mean accuracy
+- accuracy for 6 different labels, take each label task as the bianary classification task
     - toxic
-    - seve
+    - severe_toxic
+    - obscene
+    - threat
+    - insult
+    - identity_hate
+
