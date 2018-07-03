@@ -19,7 +19,7 @@ class SelfAttention(nn.Module):
         self.opt = opt
         self.hidden_dim = opt.hidden_dim
         self.batch_size = opt.batch_size
-        self.use_cuda = opt.use_cuda()
+        self.use_cuda = opt.use_cuda
         # Embedding layer and load weight
         self.embedding = nn.Embedding(num_embeddings=opt.vocab_size, embedding_dim=opt.embedding_dim)
         self.embedding.weight = nn.Parameter(opt.embeddings, requires_grad=opt.embedding_training)

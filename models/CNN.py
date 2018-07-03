@@ -41,4 +41,5 @@ class CNN(nn.Module):
         cnn_out = self.conv(embeds.permute(0, 2, 1)) # (batch_size, kernel_num, 1)
         cnn_out = cnn_out.view(cnn_out.size(0), -1) # sequuze (batch_size, kernel_num)
         pred = self.fc(cnn_out)
+        # pred = F.sigmoid(pred)
         return pred

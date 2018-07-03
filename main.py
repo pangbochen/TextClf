@@ -19,22 +19,22 @@ opt = opts.parse_opt()
 # opt.debug = True
 # opt.debug_iterator = True
 
-opt.debug = False
+opt.debug = True
 opt.debug_iterator = False
 
 # opt.use_cuda = torch.cuda.is_available()
-opt.use_cuda = False
+opt.use_cuda = True
 
 # process
 opt.data_is_preprocessed = False
 # random seed
 opt.seed = 666
-
+opt.dataset = 'kaggle'
 # select model
 # opt.model = 'lstm'
-#opt.model = 'cnn'
+# opt.model = 'cnn'
 
-opt.model = 'lstm'
+opt.model = 'attention'
 
 opt.env = opt.model + '_clf'
 
@@ -81,7 +81,8 @@ if opt.debug_iterator is True:
 # cuda
 if opt.use_cuda:
     model.cuda()
-
+if opt.debug:
+    print(model)
 # start trainning
 model.train()
 # set optimizer
@@ -147,14 +148,19 @@ for idx_epoch in range(opt.max_epoch):
 
     # evaluate on test for this epoch
     # accuracy np.array (classes_size)
-    accuracy = evaluate(model, test_iter, opt) # TODO update load data in evaluate and validation
+    accuracy, AUC_scores = evaluate(model, test_iter, opt) # TODO update load data in evaluate and validation
     vis.log("{} EPOCH, accuaracy : {}".format(idx_epoch, accuracy.mean()))
     vis.plot('accuracy', accuracy)
     label_list = ['toxic', 'severe_toxic', 'obscene',
             'threat', 'insult', 'identity_hate']
+    print(accuracy)
     for i in range(len(label_list)):
         vis.plot(label_list[i], accuracy[i])
-
+    # for AUC
+    print(AUC_scores)
+    vis.plot('AUC', AUC_scores)
+    for i in range(len(label_list)):
+        vis.plot('AUC_{}'.format(label_list[i]), AUC_scores[i])
 
     # handel best model, update best model , best_lstm.pth
     if accuracy.mean() > best_accuaracy:

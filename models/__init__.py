@@ -3,7 +3,7 @@
 from .LSTM import LSTMclf, LSTMclf_mixed
 from .CNN import CNN
 from .BILSTM import BILSTM
-
+from .SelfAttention import SelfAttention
 
 def init(opt):
     if opt.model == 'lstm':
@@ -14,6 +14,8 @@ def init(opt):
         model = CNN(opt)
     elif opt.model == 'bilstm':
         model = BILSTM(opt)
+    elif opt.model == 'attention':
+        model = SelfAttention(opt)
     else:
         raise NotImplementedError
 

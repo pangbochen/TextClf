@@ -6,50 +6,7 @@ from torchtext import data, datasets
 from torchtext.vocab import GloVe, FastText
 import numpy as np
 from sklearn.metrics import accuracy_score
-
-def load_data_v3(opt):
-    # prepare dataset for Toxic Comment Classification dataset as
-    # the raw data_csv file in data folder
-    train_FN = './data/train.csv'
-
-
-
-def load_data(opt):
-    device = 0 if opt.use_cuda else -1
-
-    # use torchtext as dataloader
-    # from torchtext
-    # dataset is imdb2
-    # data.Field
-    # torchtext 的使用方法见 https://zhuanlan.zhihu.com/p/31139113?edition=yidianzixun&utm_source=yidianzixun&yidian_docid=0IIxNSe7&yidian_s=&yidian_appid=
-    # https://github.com/pytorch/text#data
-    # lower=True 将数据转换为小写
-    # include_lengths=True
-    # fix_length : 将每条数据的长度进行补全， 使用pad_token
-    # pad_token : 用于补全的字符，默认为"<pad>"
-    # sequential : 表示为序列
-    TEXT = data.Field(lower=True, include_lengths=True, batch_first=True, fix_length=opt.max_seq_len)
-    LABEL = data.Field(sequential=False)
-    train, test = datasets.IMDB.splits(TEXT, LABEL)
-
-    # get datasets
-
-    # build vocab, use Glove embedding
-    # can also use FastText or AllenNLP
-    TEXT.build_vocab(train, vectors=GloVe(name='6B', dim=300))
-    LABEL.build_vocab(train)
-
-    # generate train_iter and test_iter
-    train_iter, test_iter = data.BucketIterator.splits((train, test), batch_size=opt.batch_size, device=device, repeat=False, shuffle=True)
-
-    # update dataset information
-    opt.label_size = len(LABEL.vocab)
-    opt.vocab_size = len(TEXT.vocab)
-    opt.embedding_dim = TEXT.vocab.vectors.size()[1] # 300 as default
-    opt.embeddings = TEXT.vocab.vectors
-
-    return train_iter, test_iter
-
+from torchnet.meter import AUCMeter
 
 def clip_gradient(optimizer, grad_clip):
     # https://pytorch.org/docs/stable/torch.html#torch.clamp
@@ -59,11 +16,14 @@ def clip_gradient(optimizer, grad_clip):
                 param.grad.data.clamp_(-grad_clip, grad_clip)
 
 
-def evaluate(model, test_iter, opt):
+def evaluate(model, eval_iter, opt):
     model.eval()
     accuracy = []
     threshold = 0.5
-    for index, batch in enumerate(test_iter):
+
+    AUC_list = [AUCMeter() for _ in range(opt.label_size)]
+
+    for index, batch in enumerate(eval_iter):
         text = batch.comment_text.data
         label = torch.stack([
             batch.toxic, batch.severe_toxic, batch.obscene,
@@ -80,6 +40,23 @@ def evaluate(model, test_iter, opt):
         is_class = pred > threshold  # is it is greater than the threshold
         is_class = is_class.float()  # (batch_size, classes_size)
 
+        # for AUC_meter
+        pred = torch.nn.functional.sigmoid(pred)
+        # print(pred)
+        # print(label)
+
+        for i in range(opt.label_size):
+            if opt.use_cuda:
+                AUC_list[i].add(
+                    output=pred.data.cpu().numpy()[:, i],
+                    target=label.data.cpu().numpy()[:, i]
+                )
+            else:
+                AUC_list[i].add(
+                    output=pred.data.numpy()[:, i],
+                    target=label.data.numpy()[:, i]
+                )
+
         percision = is_class == label # (batch_size, classes_size)
         percision = percision.float()
         percision = percision.mean(dim=0) # (classes_size)
@@ -91,7 +68,9 @@ def evaluate(model, test_iter, opt):
     # accuracy ()
     model.train()
     # return (classes_size)
-    return np.mean(accuracy, axis=0) # return the mean data, the accuracy for all six classes
+    # AUC
+    AUC_scores = [AUC_list[i].value()[0] for i in range(opt.label_size)]
+    return np.mean(accuracy, axis=0), AUC_scores # return the mean data, the accuracy for all six classes
 
 def evaluate_mixed(model, clf, test_iter, opt):
     '''

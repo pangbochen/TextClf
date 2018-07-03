@@ -47,6 +47,18 @@ loss
 
 accuracy
 
+    calcalate the accuracy for six binary-classification tasks
+
+    while accuracy may not be a perfect quota
+
+    for the 0/1 is not balanced
+
+    AUC is more meaningful
+
+AUC
+
+    later I calculate the AUC for each classification task
+
 ## vis
 
 - log
@@ -59,4 +71,13 @@ accuracy
     - threat
     - insult
     - identity_hate
+-
+
+
+## Result:
+- cnn : best accuracy on test dataset: 0.9652185440063477
+- lstm : best accuracy: 0.9680070877075195
+    - time : 22min
+    - epoch : 40
+    - embedding :
 
