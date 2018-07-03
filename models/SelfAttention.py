@@ -19,18 +19,18 @@ class SelfAttention(nn.Module):
         self.opt = opt
         self.hidden_dim = opt.hidden_dim
         self.batch_size = opt.batch_size
-        self.use_cuda = opt.use_cuda
+        self.use_gpu = opt.use_cuda
         # Embedding layer and load weight
         self.embedding = nn.Embedding(num_embeddings=opt.vocab_size, embedding_dim=opt.embedding_dim)
         self.embedding.weight = nn.Parameter(opt.embeddings, requires_grad=opt.embedding_training)
         # layer init
-        self.num_layers = 1
+        self.num_layers = 2
         self.dropout = opt.keep_dropout
         self.bilstm = nn.LSTM(opt.embedding_dim, opt.hidden_dim//2 , num_layers=self.num_layers, dropout=self.dropout, bidirectional=True)
         self.linear = nn.Linear(opt.hidden_dim, opt.label_size) # linear layer: hidden_dim -> label_dim
         self.hidden = self.init_hidden()
-        self.self_attention = nn.Sequential(
-            nn.Linear(opt.hidden_dim, 24),
+        self.self_attention = nn.Sequential( # (batch_size, seq_len, hidden_dim)
+            nn.Linear(opt.hidden_dim, 24),   # (batch_size, seq_len, 24)
             nn.ReLU(True), # inplace
             nn.Linear(24, 1)
         )
@@ -47,14 +47,23 @@ class SelfAttention(nn.Module):
         return (h0, c0)
 
     def forward(self, sentence):
-        # (batch_size, sentence_num, embedding_dim)
-        embeds = self.word_embeddings(sentence)
-        x = embeds.permute(1,0,2)
+
+        print(sentence.size())
+        embeds = self.embedding(sentence) # (batch_size, seq_len, embedding_dim)
+        # print(embeds.size())
+        x = embeds.permute(1,0,2) # (seq_len, batch_size, embedding_dim)
         self.hidden = self.init_hidden(sentence.size()[0])
-        lstm_out, self.hidden = self.bilstm(x, self.hidden)
-        final = lstm_out.permute(1,0,2)
-        attn_ene = self.self_attention(final)
-        attns = F.softmax(attn_ene.view(self.batch_size, -1))
-        feats = (final * attns).sum(dim=1)
-        y = self.linear(feats)
+        lstm_out, self.hidden = self.bilstm(x, self.hidden) # lstm_out (seq_len, batch_size, hidden_dim)
+        # print(lstm_out.size())
+        final = lstm_out.permute(1,0,2)                     # (batch_size, seq_len, hidden_dim)
+        attn_ene = self.self_attention(final)               # (batch_size, seq_len, 1)
+        # print(attn_ene.size())
+        attns = F.softmax(attn_ene.view(sentence.size()[0], -1), dim=1).unsqueeze(2) # (batch_size, seq_len, 1) batch size will change in the last training batch
+        print(attns.size())
+        print(final.size())
+        feats = (final * attns).sum(dim=1)                  # (batch_size, hidden_dim)
+        print(feats.size())
+        y = self.linear(feats)                              # (batch_size, label_size)
+        #print(y.size())
+        #exit()
         return y

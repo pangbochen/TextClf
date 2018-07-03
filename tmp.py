@@ -158,7 +158,7 @@ def load_data(opt):
     opt.embeddings = TEXT.vocab.vectors
     print('finish dataset iterator')
     # generate iterator for pytorch
-    # train_iter, val_iter,test_iter = data.BucketIterator.splits((train, val, test), batch_size=opt.batch_size, device=device, repeat=False, shuffle=True)
+    # train_iter, val_iter,test_iter = data.BucketIterator.splits((train, val, test), batch_size=opt.batch_size, device=device, repeat=False, shuffle=True, sort_key=lambda x: len(x.comment_text))
 
     train_iter = get_iterator(train, batch_size=opt.batch_size, device= device,train=True, shuffle=True, repeat=False)
     test_iter = get_iterator(test, batch_size=opt.batch_size, device= device,train=True, shuffle=True, repeat=False)

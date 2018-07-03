@@ -111,7 +111,8 @@ for idx_epoch in range(opt.max_epoch):
         label = label.float()
 
 
-
+        # print('text size : {}'.format(text.size()))
+        # print('label size : {}'.format(label.size()))
 
         pred = model(text)
 
