@@ -42,8 +42,8 @@ def evaluate(model, eval_iter, opt):
 
         # for AUC_meter
         pred = torch.nn.functional.sigmoid(pred)
-        # print(pred)
-        # print(label)
+        print(pred)
+        print(label)
 
         for i in range(opt.label_size):
             if opt.use_cuda:
@@ -121,10 +121,18 @@ def evaluate_mixed_f1(model, clf, test_iter, opt):
     cum_tensor = torch.Tensor()
 
     for index, batch in enumerate(test_iter):
-        text = batch.text[0] # for torchtext
+
+        text = batch.comment_text.data
+        label = torch.stack([
+            batch.toxic, batch.severe_toxic, batch.obscene,
+            batch.threat, batch.insult, batch.identity_hate
+        ], dim=1)
+
+        label = label.long()
+
         pred, festure_tensor = model(text) # festure_tensor (batch_size, festure_dim)
         cum_tensor = torch.cat((cum_tensor, festure_tensor))
-
+        label_fetures = torch.cat((label_fetures, label))
 
     if opt.use_cuda:
         test_X = cum_tensor.data.cpu().numpy()
@@ -133,10 +141,17 @@ def evaluate_mixed_f1(model, clf, test_iter, opt):
         test_X = cum_tensor.data.numpy()
         test_y = label_fetures.data.numpy()
     pred_y = clf.predict(test_X)
-    accuracy = accuracy_score((pred_y, test_y))
+
+    if opt.debug is True:
+        print(pred_y)
+        print(test_y)
+    accuracy_list = []
+    for i in range(opt.label_size):
+        tmp_accuracy = accuracy_score(y_pred=pred_y[:,i], y_true=test_y[:,i])
+        accuracy_list.append(tmp_accuracy)
 
     model.train()
-    return accuracy # return the mean data
+    return accuracy_list # return the mean data
 
 def validate(model, val_iter, criterion, opt):
     model.eval()

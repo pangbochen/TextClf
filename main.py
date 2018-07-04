@@ -19,8 +19,15 @@ opt = opts.parse_opt()
 # opt.debug = True
 # opt.debug_iterator = True
 
-opt.debug = True
-opt.debug_iterator = False
+# opt.debug in this mode, only
+
+opt.debug = False
+opt.debug_iterator = False # check for data generator
+
+
+opt.one_hot = False
+# True for use one_hot embedding, False for use pretrainded
+# one_hot only for
 
 # opt.use_cuda = torch.cuda.is_available()
 opt.use_cuda = True
@@ -34,9 +41,12 @@ opt.dataset = 'kaggle'
 # opt.model = 'lstm'
 # opt.model = 'cnn'
 
-opt.model = 'attention'
+opt.model = 'bilstm'
 
 opt.env = opt.model + '_clf'
+
+if opt.one_hot is True:
+    opt.env += '_one_hot'
 
 # visdom
 vis = Visualizer(opt.env)

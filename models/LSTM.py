@@ -32,8 +32,16 @@ class LSTMclf(nn.Module):
         self.batch_size = opt.batch_size
         self.use_cuda = opt.use_cuda
         # layer
-        self.embedding = nn.Embedding(opt.vocab_size, opt.embedding_dim)
-        self.embedding.weight = nn.Parameter(opt.embeddings, requires_grad=opt.embedding_training)
+        if opt.one_hot is False:
+            # use pre_trained word embedding
+            self.embedding = nn.Embedding(opt.vocab_size, opt.embedding_dim)
+            self.embedding.weight = nn.Parameter(opt.embeddings, requires_grad=opt.embedding_training)
+        else:
+            # use one-hot
+            self.embedding = nn.Embedding(opt.vocab_size, opt.embedding_dim)
+            self.embedding.weight.data = torch.eye(opt.vocab_size)
+            self.embedding_linear = nn.Linear(opt.vocab_size, opt.embedding_dim)
+
         self.lstm = nn.LSTM(opt.embedding_dim, opt.hidden_dim)
         self.label = nn.Linear(opt.hidden_dim, opt.label_size)
         self.hidden = self.init_hidden()
@@ -53,8 +61,14 @@ class LSTMclf(nn.Module):
             c0 = Variable(torch.zeros(1, batch_size, self.hidden_dim))
         return (h0, c0)
 
-    def forward(self, sentence): # (batch_size, seq_len, input_dim)
-        embeds = self.embedding(sentence) # (batch_size, seq_len, embedding_dim)
+    def forward(self, sentence): # (batch_size, seq_len)
+        # print(sentence.size())
+        if self.opt.one_hot is False:
+            # use pretrained word embedding
+            embeds = self.embedding(sentence) # (batch_size, seq_len, embedding_dim)
+        else:
+            embeds = self.embedding(sentence) # (batch_size, seq_len, vocab_size)
+            embeds = self.embedding_linear(embeds) # (batch_size, seq_len, embedding_dim)
         # tensor.permute, swap the tensor dim
         x = embeds.permute(1, 0, 2) # (seq_len, batch_size, embedding_dim)
         self.hidden = self.init_hidden(sentence.size()[0]) # send batch_size
@@ -109,5 +123,5 @@ class LSTMclf_mixed(nn.Module):
             final = torch.mean(out, 1) # (batch_size, hidden_dim) 使用每个单词的情感向量的均值作为句子的情感向量
         else:
             final = lstm_out[-1] # (batch_size, hidden_dim) 使用最后一个单词的情感向量作为句子的情感向量
-        ret = self.label(final) # (batch_size, label_size) 得到每个句子的类别分布
+        ret = self.label(final) # (batch_size, label_size) 得到每个句子的lebel分布
         return ret, final
