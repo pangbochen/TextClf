@@ -48,7 +48,7 @@ class SelfAttention(nn.Module):
 
     def forward(self, sentence):
 
-        print(sentence.size())
+        #print(sentence.size())
         embeds = self.embedding(sentence) # (batch_size, seq_len, embedding_dim)
         # print(embeds.size())
         x = embeds.permute(1,0,2) # (seq_len, batch_size, embedding_dim)
@@ -59,10 +59,10 @@ class SelfAttention(nn.Module):
         attn_ene = self.self_attention(final)               # (batch_size, seq_len, 1)
         # print(attn_ene.size())
         attns = F.softmax(attn_ene.view(sentence.size()[0], -1), dim=1).unsqueeze(2) # (batch_size, seq_len, 1) batch size will change in the last training batch
-        print(attns.size())
-        print(final.size())
+        #print(attns.size())
+        #print(final.size())
         feats = (final * attns).sum(dim=1)                  # (batch_size, hidden_dim)
-        print(feats.size())
+        #print(feats.size())
         y = self.linear(feats)                              # (batch_size, label_size)
         #print(y.size())
         #exit()
