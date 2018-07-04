@@ -67,3 +67,18 @@ class SelfAttention(nn.Module):
         #print(y.size())
         #exit()
         return y
+
+    '''
+    for self-attention
+        
+        The first question is, what does the lstm model do?
+            embedding the sentence or we called sequence into the feature vector.
+    
+        in the previous lstm based model
+        the embedding feature of the whole sequence is the hidden state of last token or the mean of all token's hidden states
+        while it is not a good way to asign the specific rule to generate the sequence feature.
+        
+        self-attention provides one way:
+            self-attention will generate the (batch_size, seq_len, 1) 
+            that the weight for each token in the sequence to generate the final sequence embedding
+    '''
