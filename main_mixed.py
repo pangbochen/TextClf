@@ -147,7 +147,11 @@ for idx_round in range(opt.max_epoch):
     else:
         train_X = feature_tensor.data.numpy()
         train_y = label_fetures.data.numpy()
-    feature_clf.fit(train_X, train_y)
+        # while in the training, it is too large to train a sklearn model
+        # so i just use the formal 10000 sample to do the test
+
+
+    feature_clf.fit(train_X[: 10000], train_y[:10000])
     # evaluate model with custom classification model
     # erase cum_features
     cum_tensor = torch.Tensor()
